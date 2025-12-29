@@ -1,5 +1,8 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const app = express();
 const cors = require('cors');
 const { connectDB } = require('./config/db.Config');
@@ -19,6 +22,14 @@ connectDB();
 //initial.seedAll();
 
 // Middlewares
+app.use(helmet());
+app.use(compression());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use(limiter);
 const allowedOrigins = [
   "http://localhost:4200",
   "https://your-frontend-domain.com"

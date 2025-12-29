@@ -6,8 +6,13 @@ function validateVariations(variations) {
   }
 
   const validSizes = ["Small", "Medium", "Large"];
+  const seenSizes = new Set();
 
   for (const [index, variation] of variations.entries()) {
+    if (seenSizes.has(variation.size)) {
+      return { valid: false, message: `Variation ${index + 1}: duplicate size "${variation.size}"` };
+    }
+    seenSizes.add(variation.size);
     if (!variation.size || !validSizes.includes(variation.size)) {
       return { valid: false, message: `Variation ${index + 1}: size must be one of: ${validSizes.join(", ")}` };
     }

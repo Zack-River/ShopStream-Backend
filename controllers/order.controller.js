@@ -2,6 +2,7 @@ const Order = require("../models/order/order.model");
 const OrderItem = require("../models/order/orderItem.model");
 const Menu = require("../models/menu/menu.model");
 const Submenu = require("../models/menu/subMenu.model");
+const MenuItem = require("../models/menu/menuItem.model");
 const {
   getRestaurantByUserId,
   getMenuItemById,
@@ -408,17 +409,10 @@ const validateOrderRequest = ({ orderItems, deliveryAddress, PaymentMethod, deli
 
 const fetchMenuItems = async (orderItems) => {
   try {
-    const itemsPromises = orderItems.map(({ item }) => getMenuItemById(item.id));
-    const results = await Promise.allSettled(itemsPromises);
-    
-    return results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
-      } else {
-        console.error(`Error fetching menu item ${orderItems[index].item.id}:`, result.reason);
-        return null;
-      }
-    });
+    const itemIds = orderItems.map(({ item }) => item.id);
+    // Optimization: Batch fetch all items in one query
+    const items = await MenuItem.find({ _id: { $in: itemIds } }).lean();
+    return items;
   } catch (error) {
     console.error("Error in fetchMenuItems:", error);
     throw error;
@@ -431,9 +425,11 @@ const validateMenuItems = async (fetchedItems, orderItems) => {
   const validOrderItems = [];
   let restaurantId = null;
 
-  for (let i = 0; i < fetchedItems.length; i++) {
-    const menuItem = fetchedItems[i];
-    const requested = orderItems[i];
+  // Optimization: Create Map for O(1) lookup
+  const itemMap = new Map(fetchedItems.map(item => [item._id.toString(), item]));
+
+  for (const requested of orderItems) {
+    const menuItem = itemMap.get(requested.item.id);
 
     if (!menuItem) {
       unAvailableItems.push({
@@ -442,9 +438,6 @@ const validateMenuItems = async (fetchedItems, orderItems) => {
       });
       continue;
     }
-
-    // ✅ REMOVED: Check for menuItem.isAvailable since it doesn't exist in your schema
-    // The menu item itself doesn't have isAvailable, only variations do
 
     // Get restaurant ID and ensure all items are from the same restaurant
     const itemRestaurantId = await getRestaurantIdFromMenuItem(menuItem);
@@ -474,7 +467,7 @@ const validateMenuItems = async (fetchedItems, orderItems) => {
       continue;
     }
 
-    // ✅ Check variation availability (this is the correct check)
+    // Check variation availability
     if (!variation.isAvailable) {
       unAvailableItems.push({
         item: menuItem._id,

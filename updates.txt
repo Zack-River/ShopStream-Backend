@@ -1,0 +1,53 @@
+Implementation Plan - ShopStream Backend
+Goal Description
+Configure the application environment using user-provided credentials and identify/implement code enhancements, focusing on performance, security, and algorithmic efficiency.
+
+User Review Required
+IMPORTANT
+
+External API keys (Stripe, Cloudinary) will be set to placeholders as they were not provided. User needs to supply these for full functionality.
+
+Proposed Changes
+Configuration
+[NEW] 
+.env
+Create 
+.env
+ based on 
+Examples.env
+.
+Set secrets to 19781225 as requested.
+Set defaults for local development (MongoDB URI, Port).
+Enhancements
+[MODIFY] 
+app.js
+[NEW] Add helmet for security headers.
+[NEW] Add compression for response optimization.
+[NEW] Add express-rate-limit to prevent abuse.
+[MODIFY] 
+order.controller.js
+[FIX] Replace N+1 DB calls in 
+fetchMenuItems
+ and 
+validateMenuItems
+ with batch queries using $in operator.
+[OPTIMIZATION] Use Hash Maps for O(1) item lookup during validation.
+[MODIFY] 
+menuItem.controller.js
+[OPTIMIZATION] Use .lean() for getAllItems query to improve read performance.
+[MODIFY] 
+variation.Validator.js
+[FIX] Add duplicate size check using a Set (O(N)) to ensure data integrity.
+Documentation
+[NEW] 
+tech_stack_and_enhancements.md
+ describing the work.
+Verification Plan
+Automated Tests
+Server startup check: npm start to ensure configuration is valid.
+If tests are added: npm test.
+Manual Verification
+Check if 
+.env
+ exists and contains correct values.
+Verify server connects to DB (logs).

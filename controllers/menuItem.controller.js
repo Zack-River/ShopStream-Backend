@@ -367,7 +367,7 @@ exports.deleteItem = asyncWrapper(async (req, res) => {
 exports.getItemById = asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
 
-    const menuItem = await MenuItem.findById(itemId);
+    const menuItem = await MenuItem.findById(itemId).lean();
     if (!menuItem) {
         return res.status(STATUS_CODES.NOT_FOUND).json({
             success: false,
